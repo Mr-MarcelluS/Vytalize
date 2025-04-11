@@ -1,40 +1,67 @@
-from django.contrib.auth.models import User
 from django.db import models
+from django.contrib.auth.models import User
 
-class UserProfile(models.Model):
-    ROLE_CHOICES = [
-        ('doctor', 'Doctor'),
-        ('patient', 'Patient'),
-    ]
+# Doctor Profile
+class DoctorProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    specialization = models.CharField(max_length=100)
+    contact_number = models.CharField(max_length=15, blank=True, null=True)
+    profile_picture = models.ImageField(upload_to='doctor_profiles/', blank=True, null=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.role}"
+        return self.user.get_full_name()
 
+
+# Patient Profile
 class Patient(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100)
-    doctor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='doctor_patients')
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=15)
+    address = models.TextField()
+    blood_group = models.CharField(max_length=5)
+    allergies = models.TextField(blank=True, null=True)
+    medical_conditions = models.TextField(blank=True, null=True)
+    # other fields...
+
+
+    # New fields for QR code & PDF download
+    qr_code_image = models.ImageField(upload_to='qr_codes/', blank=True, null=True)
+    pdf_report = models.FileField(upload_to='pdf_reports/', blank=True, null=True)
 
     def __str__(self):
         return self.name
 
-
-class HealthRecord(models.Model):
+# Medical History
+class MedicalHistory(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
-    condition = models.TextField()
+    doctor = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.DateField(auto_now_add=True)
-
-class PatientDetails(models.Model):
-    patient = models.OneToOneField(User, on_delete=models.CASCADE)
-    health_history = models.TextField()
-    bp = models.CharField(max_length=20)
-    sugar = models.CharField(max_length=20)
-    weight = models.CharField(max_length=20)
-    medications = models.TextField()
+    diagnosis = models.TextField()
+    treatment = models.TextField()
 
     def __str__(self):
-        return f"{self.name} ({self.patient_id})"  # ❌ Not indented
+        return f"{self.patient.name} - {self.date}"
+
+# Prescription
+class Prescription(models.Model):
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    medication = models.CharField(max_length=255)
+    dosage = models.CharField(max_length=100)
+    instructions = models.TextField()
+    prescribed_on = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Prescription for {self.patient.name}"
 
 
+# Medical Report
+class MedicalReport(models.Model):
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    doctor = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.DateField(auto_now_add=True)
+    report_name = models.CharField(max_length=100)
+    file = models.FileField(upload_to='medical_reports/')
+
+    def __str__(self):
+        return f"{self.patient.name} - {self.report_name}"
